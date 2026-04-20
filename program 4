@@ -1,0 +1,59 @@
+from collections import deque
+
+class Solution:
+    def catMouseGame(self, graph: List[List[int]]) -> int:
+        n = len(graph)
+        # degree[m][c][t] = number of moves available from this state
+        degree = [[[0] * 3 for _ in range(n)] for _ in range(n)]
+        # color[m][c][t] = 0 (Draw/Unknown), 1 (Mouse Win), 2 (Cat Win)
+        color = [[[0] * 3 for _ in range(n)] for _ in range(n)]
+        
+        queue = deque()
+        
+        for m in range(n):
+            for c in range(n):
+                # Mouse's turn
+                degree[m][c][1] = len(graph[m])
+                # Cat's turn (Cat cannot go to node 0)
+                degree[m][c][2] = len([neighbor for neighbor in graph[c] if neighbor != 0])
+                
+        # Fill terminal states
+        for i in range(1, n):
+            # Mouse at hole: Mouse wins
+            color[0][i][1] = color[0][i][2] = 1
+            queue.append((0, i, 1, 1))
+            queue.append((0, i, 2, 1))
+            # Cat catches Mouse: Cat wins
+            color[i][i][1] = color[i][i][2] = 2
+            queue.append((i, i, 1, 2))
+            queue.append((i, i, 2, 2))
+            
+        def get_prev_states(m, c, t):
+            prev_states = []
+            if t == 1: # Current is Mouse turn, so prev was Cat turn
+                for prev_c in graph[c]:
+                    if prev_c != 0:
+                        prev_states.append((m, prev_c, 2))
+            else: # Current is Cat turn, so prev was Mouse turn
+                for prev_m in graph[m]:
+                    prev_states.append((prev_m, c, 1))
+            return prev_states
+
+        while queue:
+            m, c, t, winner = queue.popleft()
+            
+            for pm, pc, pt in get_prev_states(m, c, t):
+                if color[pm][pc][pt] == 0:
+                    # If prev player can move to a state where they win
+                    if pt == winner:
+                        color[pm][pc][pt] = winner
+                        queue.append((pm, pc, pt, winner))
+                    # If all moves for prev player lead to opponent winning
+                    else:
+                        degree[pm][pc][pt] -= 1
+                        if degree[pm][pc][pt] == 0:
+                            color[pm][pc][pt] = winner
+                            queue.append((pm, pc, pt, winner))
+                            
+        # Starting position: Mouse at 1, Cat at 2, Mouse's turn
+        return color[1][2][1]
