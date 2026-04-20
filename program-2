@@ -1,0 +1,43 @@
+class Solution:
+    def survivedRobotsHealths(self, positions: list[int], healths: list[int], directions: str) -> list[int]:
+        # Combine data with original index to maintain return order
+        robots = []
+        for i in range(len(positions)):
+            robots.append([positions[i], healths[i], directions[i], i])
+        
+        # Sort robots by their position on the line
+        robots.sort()
+        
+        stack = []  # Stack to store right-moving robots ('R')
+        
+        for i in range(len(robots)):
+            curr = robots[i]
+            
+            if curr[2] == 'R':
+                # Right-moving robots are added to stack to wait for potential 'L' collisions
+                stack.append(curr)
+            else:
+                # Current robot is moving 'L', check for collisions with 'R' robots in stack
+                while stack and stack[-1][2] == 'R' and curr[1] > 0:
+                    top = stack[-1]
+                    
+                    if top[1] < curr[1]:
+                        # Right robot has less health: it is destroyed, Left loses 1 health
+                        stack.pop()
+                        curr[1] -= 1
+                    elif top[1] > curr[1]:
+                        # Left robot has less health: it is destroyed, Right loses 1 health
+                        top[1] -= 1
+                        curr[1] = 0
+                    else:
+                        # Both have equal health: both are destroyed
+                        stack.pop()
+                        curr[1] = 0
+                
+                # If the 'L' robot survived all collisions, add it to the stack
+                if curr[1] > 0:
+                    stack.append(curr)
+                    
+        # Sort survivors by original index and extract health values
+        stack.sort(key=lambda x: x[3])
+        return [robot[1] for robot in stack]
