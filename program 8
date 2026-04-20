@@ -1,0 +1,73 @@
+class Node:
+    def __init__(self, count):
+        self.count = count
+        self.keys = set()
+        self.prev = None
+        self.next = None
+
+class AllOne:
+    def __init__(self):
+        self.key_map = {}  # key -> Node
+        self.head = Node(float('-inf'))  # Dummy head
+        self.tail = Node(float('inf'))   # Dummy tail
+        self.head.next = self.tail
+        self.tail.prev = self.head
+
+    def _add_node_after(self, new_node, prev_node):
+        new_node.prev = prev_node
+        new_node.next = prev_node.next
+        prev_node.next.prev = new_node
+        prev_node.next = new_node
+
+    def _remove_node(self, node):
+        node.prev.next = node.next
+        node.next.prev = node.prev
+
+    def inc(self, key: str) -> None:
+        if key not in self.key_map:
+            # Case 1: Key is new, needs to be in a node with count 1
+            if self.head.next.count != 1:
+                self._add_node_after(Node(1), self.head)
+            self.head.next.keys.add(key)
+            self.key_map[key] = self.head.next
+        else:
+            # Case 2: Key exists, move it to a node with count + 1
+            curr_node = self.key_map[key]
+            next_count = curr_node.count + 1
+            if curr_node.next.count != next_count:
+                self._add_node_after(Node(next_count), curr_node)
+            
+            curr_node.next.keys.add(key)
+            self.key_map[key] = curr_node.next
+            curr_node.keys.remove(key)
+            if not curr_node.keys:
+                self._remove_node(curr_node)
+
+    def dec(self, key: str) -> None:
+        curr_node = self.key_map[key]
+        curr_node.keys.remove(key)
+        
+        if curr_node.count > 1:
+            prev_count = curr_node.count - 1
+            if curr_node.prev.count != prev_count:
+                self._add_node_after(Node(prev_count), curr_node.prev)
+            curr_node.prev.keys.add(key)
+            self.key_map[key] = curr_node.prev
+        else:
+            # If count becomes 0, just delete from map
+            del self.key_map[key]
+            
+        if not curr_node.keys:
+            self._remove_node(curr_node)
+
+    def getMaxKey(self) -> str:
+        if self.tail.prev == self.head:
+            return ""
+        # Return any key from the node just before the dummy tail
+        return next(iter(self.tail.prev.keys))
+
+    def getMinKey(self) -> str:
+        if self.head.next == self.tail:
+            return ""
+        # Return any key from the node just after the dummy head
+        return next(iter(self.head.next.keys))
