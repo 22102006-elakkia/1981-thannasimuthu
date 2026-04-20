@@ -1,0 +1,20 @@
+class Solution:
+    def maxTotalReward(self, rewardValues: list[int]) -> int:
+        # 1. Sort and remove duplicates
+        # We must process smaller rewards first to build the base for larger ones
+        rewards = sorted(set(rewardValues))
+        
+        # 2. dp is our bitset. Bit 0 is 1 because sum 0 is always reachable.
+        dp = 1
+        
+        for v in rewards:
+            # 3. Create a mask to pick all reachable sums 'x' where x < v.
+            # (1 << v) - 1 creates a binary number with 'v' ones (e.g., if v=3, mask is 0b111)
+            mask = (1 << v) - 1
+            
+            # 4. Filter dp to get only bits < v, then shift by v to "add" the reward
+            # This is equivalent to: for all x in dp where x < v, dp.add(x + v)
+            dp |= (dp & mask) << v
+            
+        # 5. The highest bit set in our bitset is the maximum possible reward
+        return dp.bit_length() - 1
